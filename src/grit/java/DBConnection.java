@@ -2,6 +2,7 @@ package grit.java;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -15,14 +16,13 @@ public class DBConnection {
 	static boolean connect() {
 		try {
 			Class.forName("com.mysql.cj.jdbc.Driver");
-			System.out.println("All good");
 		} catch (Exception ex) {
 			System.out.println("Exception Driver: " + ex);
 			return false;
 		}
 		
 		try {
-			connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dumble?serverTimezoneUTC", "root", "");
+			connection = DriverManager.getConnection(DBLogin.url, DBLogin.user, DBLogin.pass);
 			return true;
 		} catch (SQLException e) {
 			System.out.println("SQLException: " + e.getMessage());
@@ -39,20 +39,26 @@ public class DBConnection {
 			
 			for (int table = 0; table < tableNames.length; ++table) {
 				ResultSet metaResult = connection.getMetaData().getColumns(null, null, tableNames[table], null);
+				int maxColumns = 0;
 				
 				StringBuilder columns = new StringBuilder();
 				while (metaResult.next()) {
-					columns.append(metaResult.getString("COLUMN_NAME") + " LIKE '%XXX%' OR ");
+					columns.append(metaResult.getString("COLUMN_NAME") + " LIKE ? OR ");
+					++maxColumns;
 				}
 				
 				columns.delete(columns.length() - 3, columns.length());
 						
-				Statement statement = connection.createStatement();
-				String queryString = "SELECT * FROM " + tableNames[table] + " WHERE " + columns.toString().replace("XXX", searchString) + ";"; 
-				ResultSet result = statement.executeQuery(queryString);
-				int maxColumns = result.getMetaData().getColumnCount();
+				//Statement statement = connection.createStatement();
+				String queryString = "SELECT * FROM " + tableNames[table] + " WHERE " + columns.toString() + ";"; 
+				PreparedStatement prep = connection.prepareStatement(queryString);
+				String modifiedSearchString = "%" + searchString + "%";
+				for (int column = 1; column <= maxColumns; ++column)
+					prep.setString(column, modifiedSearchString);
 				
-				
+				//ResultSet result = prep.executeQuery(queryString);
+				ResultSet result = prep.executeQuery();
+				//int maxColumns = result.getMetaData().getColumnCount();
 				
 				while (result.next()) {
 					resultString.append("<div><h2>" + result.getString(1) + "</h2>");
