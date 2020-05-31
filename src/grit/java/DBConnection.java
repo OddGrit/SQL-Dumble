@@ -35,20 +35,38 @@ public class DBConnection {
 	static String searchDB(String searchString) {
 		try {
 			
-			
-			Statement statement = connection.createStatement();
-			ResultSet result = statement.executeQuery("SELECT * FROM masterscplist WHERE Name LIKE '%" + searchString + "%';");
-			int maxColumns = result.getMetaData().getColumnCount();
-			
 			StringBuilder resultString = new StringBuilder();
 			
-			while (result.next()) {
-				for (int column = 1; column < maxColumns; ++column) {
-					if (!isNull(result.getString(column))) {
-						System.out.print(result.getString(column));
+			for (int table = 0; table < tableNames.length; ++table) {
+				ResultSet metaResult = connection.getMetaData().getColumns(null, null, tableNames[table], null);
+				
+				StringBuilder columns = new StringBuilder();
+				while (metaResult.next()) {
+					columns.append(metaResult.getString("COLUMN_NAME") + " LIKE '%XXX%' OR ");
+				}
+				
+				columns.delete(columns.length() - 3, columns.length());
+						
+				Statement statement = connection.createStatement();
+				String queryString = "SELECT * FROM " + tableNames[table] + " WHERE " + columns.toString().replace("XXX", searchString) + ";"; 
+				ResultSet result = statement.executeQuery(queryString);
+				int maxColumns = result.getMetaData().getColumnCount();
+				
+				
+				
+				while (result.next()) {
+					resultString.append("<div><h2>" + result.getString(1) + "</h2>");
+					
+					for (int column = 2; column <= maxColumns; ++column) {
+						if (!isNull(result.getString(column))) {
+							resultString.append("<strong>" + result.getMetaData().getColumnName(column).replace("_", " ") + ":</strong> " 
+									+ result.getString(column) + "<br>");
+						}
 					}
-				}				
+					resultString.append("<p></div>");
+				}
 			}
+			return resultString.toString();
 			
 		} catch (SQLException ex) {
 			// TODO Auto-generated catch block

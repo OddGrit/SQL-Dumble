@@ -1,6 +1,7 @@
 package grit.java;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -17,6 +18,13 @@ public class Controller extends HttpServlet {
 	}
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		DBConnection.connect();
-		DBConnection.searchDB("The");	
+		//DBConnection.searchDB(request.getParameter("search"));
+		
+		//response.setCharacterEncoding("text/html");
+		PrintWriter writer = response.getWriter();
+		
+		writer.print("<html><style>div:nth-child(odd) {background-color:lightgray;}</style><body><h1>Dumble's Decision</h1>");
+		writer.print(DBConnection.searchDB(request.getParameter("search")));
+		writer.print("</body></html>");
 	}
 }
